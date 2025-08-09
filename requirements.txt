@@ -1,5 +1,0 @@
-Flask
-pycryptodome
-aiohttp
-urllib3
-protobuf

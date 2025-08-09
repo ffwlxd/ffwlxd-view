@@ -71,7 +71,7 @@ async def make_request_async(encrypt, token, session):
             'Expect': "100-continue",
             'X-Unity-Version': "2018.4.11f1",
             'X-GA': "v1 1",
-            'ReleaseVersion': "OB48"
+            'ReleaseVersion': "OB50"
         }
 
         async with session.post(url, data=edata, headers=headers, ssl=False, timeout=10) as response:
@@ -98,7 +98,7 @@ def decode_protobuf(binary):
 # Visit endpoint
 # ----------------------
 @app.route('/visit', methods=['GET'])
-async def visit():
+def visit():
     target_uid = request.args.get("uid")
     if not target_uid:
         return jsonify({"error": "Target UID is required"}), 400
@@ -112,7 +112,6 @@ async def visit():
         if encrypted_target_uid is None:
             raise Exception("Encryption of target UID failed.")
 
-        # Repeat tokens list until it reaches 1000 entries
         required_count = 1000
         repeated_tokens = (tokens * math.ceil(required_count / len(tokens)))[:required_count]
 
@@ -120,12 +119,15 @@ async def visit():
         player_name = None
         player_uid = None
 
-        async with aiohttp.ClientSession() as session:
-            tasks = [
-                make_request_async(encrypted_target_uid, token['token'], session)
-                for token in repeated_tokens
-            ]
-            results = await asyncio.gather(*tasks)
+        async def process_requests():
+            async with aiohttp.ClientSession() as session:
+                tasks = [
+                    make_request_async(encrypted_target_uid, token['token'], session)
+                    for token in repeated_tokens
+                ]
+                return await asyncio.gather(*tasks)
+
+        results = asyncio.run(process_requests())
 
         for info in results:
             if info is not None:

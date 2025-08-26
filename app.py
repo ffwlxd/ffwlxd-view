@@ -53,8 +53,11 @@ async def visit(session, token, uid, data):
             if resp.status == 200:
                 return True, await resp.read()
             else:
+                # Agar token region mismatch ya UID invalid
+                app.logger.warning(f"⚠️ Visit failed for UID {uid} with status {resp.status}")
                 return False, None
-    except:
+    except Exception as e:
+        app.logger.error(f"❌ Visit error for UID {uid}: {e}")
         return False, None
 
 # ------------------------
